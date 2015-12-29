@@ -56,7 +56,7 @@ namespace gwRAMsplit
             // mapdata, stored consecutively
             string entry = "vaddr\tpaddr\tsize\toffset\r\n";
             UInt32 mapcount = reader.ReadUInt32();
-            reader.ReadInt32();
+            UInt32 unknown = reader.ReadUInt32();
             UInt32 offset = (mapcount * 12) + 8;
 
             for (int i = 0; i < mapcount; i++)
@@ -68,20 +68,22 @@ namespace gwRAMsplit
 
                 entry += vaddr.ToString("X8") + "\t" + paddr.ToString("X8") + "\t" + size.ToString("X8") + "\t" + offset.ToString("X8") + "\r\n";
 
+                // Dump mapdata to output directory
+                long pos = reader.BaseStream.Position;
+                reader.BaseStream.Seek(offset, SeekOrigin.Begin);
+
+                byte[] data = new byte[size];
+                reader.Read(data, 0, Convert.ToInt32(size));
+                reader.BaseStream.Seek(pos, SeekOrigin.Begin);
+                File.WriteAllBytes("mapdata\\" + (i + 1).ToString("D4") + "_" + vaddr.ToString("X8") + ".bin", data);
+
                 // Calculate next offset
                 offset = offset + size;
-
-                // Dump mapdata to output directory
-                byte[] data = new byte[size];
-                long pos = input_ms.Position;
-                input_ms.Read(data, 0, Convert.ToInt32(size));
-                input_ms.Seek(pos, SeekOrigin.Begin);
-                File.WriteAllBytes("mapdata\\" + (i + 1) + "_" + vaddr.ToString("X8") + ".bin", data);
             }
 
             // Write txt
             txt.Write(entry);
-         
+
             // Cleaning
             txt.Close();
             reader.Close();
